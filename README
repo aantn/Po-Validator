@@ -1,0 +1,4 @@
+A tiny python script to validate PO files with HTML content.
+
+Tidy is used for validation.
+
