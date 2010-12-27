@@ -1,17 +1,31 @@
 #!/usr/bin/env python
 
+import os
 import sys
 
 try:
     import _elementtidy
 except ImportError:
-    print 'Please install the python bindings for tidy. On Ubuntu, run "sudo apt-get install python-elementtidy"'
+    print 'Please install the python bindings for tidy.\nOn Ubuntu, run "sudo apt-get install python-elementtidy"'
     sys.exit(1)
 
 try:
     import polib
 except ImportError:
-    print 'Please install polib. On Ubuntu, run "sudo apt-get install python-polib"'
+    print 'Please install polib.\nOn Ubuntu, run "sudo apt-get install python-polib"'
+
+try:
+    import argparse
+except ImportError:
+    print 'You\'re running an older version of Python that doesn\'t include the argparse module.\n' + \
+             'You can install it by running "sudo easy_install argparse"\n' + \
+             'On Ubuntu, run "sudo apt-get install python-argparse"'
+    sys.exit()
+
+# Setup command line arguments
+parser = argparse.ArgumentParser(description='A teansy python script for validating HTML content in PO files')
+parser.add_argument("FILE", default=None, help="a PO file to validate")
+args = parser.parse_args()
 
 class PoValidator:
 
@@ -45,5 +59,7 @@ class PoValidator:
                 print '\n'
 
 if __name__ == '__main__':
+    if args.FILE is not None:
+        file = os.path.abspath(args.FILE)
     validator = PoValidator()
-    validator.validate_po('/home/natan/Downloads/en_GB.po')
+    validator.validate_po(file)
