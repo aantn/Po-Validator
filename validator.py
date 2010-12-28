@@ -2,6 +2,7 @@
 
 import os
 import sys
+from HTMLParser import HTMLParser
 
 try:
     import _elementtidy
@@ -27,8 +28,32 @@ parser = argparse.ArgumentParser(description='A teansy python script for validat
 parser.add_argument("FILE", default=None, help="a PO file to validate")
 args = parser.parse_args()
 
-class PoValidator:
 
+class HTMLTag:
+    
+    def __init__(self, name, attrs, is_start_tag):
+        self.name = name
+        self.attrs = attrs
+        self.is_start_tag = is_start_tag
+
+
+class TagList (HTMLParser, list):
+    '''Simple HTMLParser that stores all parsed tags and their attributes as a list.'''
+    
+    def __init__ (self, html):
+        super(TagList, self).__init__()
+        self.feed(html)
+        
+    def handle_starttag(self, tag, attrs):
+        self.append(HTMLTag(tag, attrs, True))
+
+    def handle_endtag(self, tag):
+        self.append(HTMLTag(tag, None, False))
+        
+        
+class PoValidator:
+    '''Validates HTML content in PO files and compares the translated strings to the original strings'''
+    
     # TODO: We should use a proper doctype, but the following makes
     # _elementtidy segfault
     #HEADER = r'''<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
@@ -44,22 +69,38 @@ class PoValidator:
         '''validate an html string with tidy and return a list of errors'''
         text = PoValidator.HEADER + html + PoValidator.FOOTER
         fixed_html, errors = _elementtidy.fixup(text)
-        return errors.strip().split("\n")
+        errors_list = errors.strip().split("\n")
+        errors_list.pop(0)
+        return errors_list
 
-    def validate_po (self, filename):
+    def validate (self, filename):
         '''loads, parses, and validates all html content in a .po file'''
         po = polib.pofile(filename)
+        
         for entry in po.translated_entries():
-            msg = entry.msgstr
-            errors = self._validate_html(msg)
-            if len(errors) > 1:
-                print 'Error in string "%s"' % (msg,)
-                for error in errors[1:]:
-                    print '\n'.join(error.split('-')[1:])
+            errors = self._validate_html(entry.msgstr)
+            if errors:
+                print 'Error in string "%s"' % (entry.msgstr,)
+                for e in errors:
+                    print '\n'.join(e.split('-')[1:])
                 print '\n'
-
+            
+            # If there are no errors in the string, then compare it to the original
+            else:
+                translationTags = TagList(entry.msgstr)
+                originalTags = TagList(entry.msgid)
+                
+                while len(translationTags) and len(originalTags):
+                    a = translationTags.pop(0)
+                    b = originalTags.pop(0)
+                    
+                    if a.name != b.name or a.attrs != b.attrs or a.is_start_tag != b.is_start_tag:
+                        print "In the following entry, the translation's HTML markup doesn't match the original string:"
+                        print entry
+                        
 if __name__ == '__main__':
     if args.FILE is not None:
         file = os.path.abspath(args.FILE)
+    
     validator = PoValidator()
-    validator.validate_po(file)
+    validator.validate(file)
