@@ -76,10 +76,12 @@ class PoValidator:
     def validate (self, filename):
         '''loads, parses, and validates all html content in a .po file'''
         po = polib.pofile(filename)
+        no_errors = True
         
         for entry in po.translated_entries():
             errors = self._validate_html(entry.msgstr)
             if errors:
+                no_errors = False
                 print 'Error in string "%s"' % (entry.msgstr,)
                 for e in errors:
                     print '\n'.join(e.split('-')[1:])
@@ -89,15 +91,23 @@ class PoValidator:
             else:
                 translationTags = TagList(entry.msgstr)
                 originalTags = TagList(entry.msgid)
+                mismatch = False
                 
                 while len(translationTags) and len(originalTags):
                     a = translationTags.pop(0)
                     b = originalTags.pop(0)
                     
                     if a.name != b.name or a.attrs != b.attrs or a.is_start_tag != b.is_start_tag:
-                        print "In the following entry, the translation's HTML markup doesn't match the original string:"
-                        print entry
-                        
+                        mismatch = True
+                
+                if mismatch or len(translationTags) != 0 or len(originalTags) != 0:
+                    no_errors = False
+                    print "In the following entry, the translation's HTML markup doesn't match the original string:"
+                    print entry
+        
+        if no_errors:
+            print 'File validated without errors.'
+            
 if __name__ == '__main__':
     if args.FILE is not None:
         file = os.path.abspath(args.FILE)
