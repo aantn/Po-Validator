@@ -31,11 +31,20 @@ args = parser.parse_args()
 
 class HTMLTag:
     
+    IGNORED = ['title', 'alt']
+    
     def __init__(self, name, attrs, is_start_tag):
         self.name = name
         self.attrs = attrs
         self.is_start_tag = is_start_tag
-
+        
+        # cleanup attrs and remove attributes that the translation is allowed to change
+        if self.attrs is not None:
+            filtered = []
+            for (k,v) in self.attrs:
+                if k not in HTMLTag.IGNORED:
+                    filtered.append((k,v))
+            self.attrs = filtered
 
 class TagList (HTMLParser, list):
     '''Simple HTMLParser that stores all parsed tags and their attributes as a list.'''
