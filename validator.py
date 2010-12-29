@@ -118,7 +118,9 @@ class PoValidator:
                 if mismatch or len(translationTags) != 0 or len(originalTags) != 0:
                     no_errors = False
                     print "In the following entry, the translation's HTML markup doesn't match the original string:"
-                    print entry
+                    print 'MsgID:', entry.msgid
+                    print 'MsgStr:', entry.msgstr
+                    print '\n'
         
         if no_errors:
             print 'File validated without errors.'
