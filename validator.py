@@ -68,7 +68,13 @@ class PoValidator:
     def _validate_html (self, html):
         '''validate an html string with tidy and return a list of errors'''
         text = PoValidator.HEADER + html + PoValidator.FOOTER
-        fixed_html, errors = _elementtidy.fixup(text)
+        try:
+            fixed_html, errors = _elementtidy.fixup(text)
+        except UnicodeEncodeError:
+            print 'Improper encoding settings. Please add the following lines to python2.6/sitecustomize.py:'
+            print '    import sys'
+            print "    sys.setdefaultencoding('iso-8859-1')"
+            sys.exit(1)
         errors_list = errors.strip().split("\n")
         errors_list.pop(0)
         return errors_list
